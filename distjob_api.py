@@ -47,6 +47,7 @@ class APIJob(BaseModel):
     function_args:Any
     priority:int
     start_datetime:datetime.datetime
+    check_condition_request_url:str
     
  
 
@@ -72,6 +73,7 @@ def get_job(uid: Optional[int]=None):
             "function_args":job.function_args,
             "priority":job.priority,
             "start_datetime":job.start_datetime,
+            "check_condition_request_url":job.check_condition_request_url
             }
     else:
         return {"ok":False}
@@ -79,13 +81,14 @@ def get_job(uid: Optional[int]=None):
   
 @app.post("/api/v1/jobs")
 def new_job(job : APIJob):
-    job=djc.new_job(job.function,job.function_args,job.priority,job.start_datetime)
+    job=djc.new_job(job.function,job.function_args,job.priority,job.start_datetime,job.check_condition_request_url)
     return {
         "uid":job.uid,
         "function":job.function,
         "function_args":job.function_args,
         "priority":job.priority,
         "start_datetime":job.start_datetime,
+        "check_condition_request_url":job.check_condition_request_url
         }
 
 @app.delete("/api/v1/job/{uid}")
@@ -100,8 +103,17 @@ def delete_jobs():
 
 @app.put("/api/v1/job/{uid}")
 def update_job(uid: Optional[int]=None, job:APIJob=None):
-    djc.update_job_by_uid(uid, job.function,job.function_args,job.priority,job.start_datetime)  
+    djc.update_job_by_uid(uid, job.function,job.function_args,job.priority,job.start_datetime,job.check_condition_request_url)  
     return {"ok":True}
+
+
+@app.get("/api/v1/condition")
+def get_jobs():
+    """
+    Returns all jobs in a given server
+    """
+    return {"jobs": djc.jobs}
+
 
 
 

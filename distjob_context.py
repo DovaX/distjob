@@ -1,18 +1,32 @@
+import requests
+import json
 
 class Job:
-    def __init__(self, function, function_args, priority, start_datetime):
+    instance_counter=0
+    def __init__(self, function, function_args, priority, start_datetime, check_condition_request_url):
         self.function=function
         self.function_args=function_args
         self.priority=priority
         self.start_datetime=start_datetime
-
+        self.check_condition_request_url=check_condition_request_url #should return True or False if job is done
+        self.is_assigned=False
+        
+        self.__class__.instance_counter += 1
+        self.uid = self.instance_counter
+        
 
 
 class Machine:
     def __init__(self, host, port):
-        pass
-    
+        self.host=host
+        self.port=port
+        self.processing_job=None
+        
+        
+        
 
+
+    
 
 
 class DistJobContext:
@@ -21,8 +35,29 @@ class DistJobContext:
         
         
         self.jobs=[]
-        self.machines=[]
+        self.machines=[Machine("0.0.0.0",10101),Machine("0.0.0.0",10102)]
         self.triggers=[]
+        
+        
+        
+        
+    def assign_job_to_idle_machine(self,job):
+        
+        for i,machine in enumerate(self.machines):
+            if machine.processing_job is None:
+                self.machines[i].processing_job=job
+                job.is_assigned=True
+                print("Machine",i,"was assigned")
+                return(self.machines[i])
+        print("No machine could be assigned")
+        return(None)
+    
+    def check_if_job_done(self, job):
+        response=requests.get(url=job.check_condition_request_url)
+        result=json.loads(response.content)
+        print(result)
+        
+        
         
         
     
@@ -42,8 +77,8 @@ class DistJobContext:
 
 
 
-    def new_job(self, function, function_args, priority, start_datetime):
-        job=Job(function, function_args, priority, start_datetime)
+    def new_job(self, function, function_args, priority, start_datetime, check_condition_request_url):
+        job=Job(function, function_args, priority, start_datetime, check_condition_request_url)
         
         self.jobs.append(job)
         return(job)
@@ -56,7 +91,7 @@ class DistJobContext:
      
         
 
-    def update_job(self,job,function=None, function_args=None, priority=None, start_datetime=None):
+    def update_job(self,job,function=None, function_args=None, priority=None, start_datetime=None, check_condition_request_url=None):
         index=self.jobs.index(job)
         if function is not None:
             self.jobs[index].function=function
@@ -66,12 +101,15 @@ class DistJobContext:
             self.jobs[index].priority=priority
         if start_datetime is not None:
             self.jobs[index].start_datetime=start_datetime
+        if check_condition_request_url is not None:
+            self.jobs[index].check_condition_request_url=check_condition_request_url
+            
        
         
-    def update_job_by_uid(self,job_uid, function=None, function_args=None, priority=None, start_datetime=None):
+    def update_job_by_uid(self,job_uid, function=None, function_args=None, priority=None, start_datetime=None, check_condition_request_url=None):
         job=self.get_job_by_uid(job_uid)
         try:
-            self.update_job(job,function, function_args, priority, start_datetime)
+            self.update_job(job,function, function_args, priority, start_datetime, check_condition_request_url)
         except Exception as e:
             print(f"Job couldn't be updated: {e}")
         

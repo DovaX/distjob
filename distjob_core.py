@@ -55,7 +55,7 @@ class DistJobServer:
         queue1=queue.Queue()
         
         def run_api(args):
-            from execution_core.execution_core_api import run_api
+            from distjob_api import run_api
             run_api()
             print("API RUNNING!")
             
@@ -68,7 +68,7 @@ class DistJobServer:
         
         
         def run_execution_core(args): #needs to have one parameter
-            from execution_core.execution_core_worker import run
+            from distjob_worker import run
             run()
        
         
