@@ -10,7 +10,6 @@ import threading
 import time
 import sys
 
-from distjob_context import djc
 
 
 threads=[]
@@ -44,6 +43,12 @@ class DistJobServer:
     def __init__(self,host="0.0.0.0",port=10100):
         self.host=host
         self.port=port
+        
+        
+        from distjob_context import djc
+        djc.host=host
+        djc.port=port
+
         
         global threads
         
@@ -111,4 +116,4 @@ class DistJobServer:
             sys.exit()
 
 if __name__=="__main__":
-    dist_job_server=DistJobServer()
+    dist_job_server=DistJobServer(port=10100)

@@ -43,13 +43,25 @@ app.add_middleware(
 
 
 class APIJob(BaseModel):
-    function:Any
+    function:Any="test"
     function_args:Any
     priority:int
     start_datetime:datetime.datetime
-    check_condition_request_url:str
+    check_condition_request_url:str="/api/v1/test_condition"
+    
+    
+class APIMachine(BaseModel):
+    host:str="127.0.0.1"
+    port:int=10100
+    
+    
+    
+    
+    
+    
     
  
+import datetime
 
 @app.get("/api/v1/jobs")
 def get_jobs():
@@ -107,18 +119,69 @@ def update_job(uid: Optional[int]=None, job:APIJob=None):
     return {"ok":True}
 
 
-@app.get("/api/v1/condition")
-def get_jobs():
+
+@app.get("/api/v1/machines")
+def get_machines():
     """
-    Returns all jobs in a given server
+    Returns all machines in a given server
     """
-    return {"jobs": djc.jobs}
+    return {"machines": djc.machines}
+
+
+@app.get("/api/v1/machine/{uid}")
+def get_machine(uid: Optional[int]=None):
+    """
+    uid: unique id of a machine is required
+    """
+    matching_machines=[x for x in djc.machines if x.uid==uid]
+    if len(matching_machines)==1:
+        machine=matching_machines[0]
+        return {
+            "uid":machine.uid,
+            "host":machine.host,
+            "port":machine.port,
+            }
+    else:
+        return {"ok":False}
+        
+  
+@app.post("/api/v1/machines")
+def new_machine(machine : APIMachine):
+    machine=djc.new_machine(machine.host,machine.port)
+    return {
+        "uid":machine.uid,
+        "host":machine.host,
+        "port":machine.port,
+        }
+
+@app.delete("/api/v1/machine/{uid}")
+def delete_machine(uid: Optional[int]=None):  
+    djc.delete_machine_by_uid(uid)  
+    return {"ok":True}
+
+@app.delete("/api/v1/machines")
+def delete_machines():  
+    djc.machines=[]
+    return {"ok":True}
+
+@app.put("/api/v1/machine/{uid}")
+def update_machine(uid: Optional[int]=None, machine:APIMachine=None):
+    djc.update_machine_by_uid(uid, machine.host,machine.port)  
+    return {"ok":True}
+
+
+@app.get("/api/v1/test_condition")
+def test_condition():
+    """
+    Returns sample test condition
+    """
+    return {"condition": djc.test_condition}
 
 
 
 
 def run_api():
-    uvicorn.run(app, host="0.0.0.0", port=10100)
+    uvicorn.run(app, host=djc.host, port=djc.port)
 
 if __name__=="__main__":
     run_api()
