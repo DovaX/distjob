@@ -1,8 +1,10 @@
 
 class Job:
     def __init__(self, function, function_args, priority, start_datetime):
-        
-        pass
+        self.function=function
+        self.function_args=function_args
+        self.priority=priority
+        self.start_datetime=start_datetime
 
 
 
