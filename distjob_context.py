@@ -4,12 +4,13 @@ import datetime
 
 class Job:
     instance_counter=0
-    def __init__(self, function, function_args, priority, start_datetime, check_condition_request_url):
-        self.function=function
-        self.function_args=function_args
+    def __init__(self, url, data, priority, start_datetime, check_condition_request_url, method="POST"):
+        self.url=url
+        self.data=data
         self.priority=priority
         self.start_datetime=start_datetime
         self.check_condition_request_url=check_condition_request_url #should return True or False if job is done
+        self.method=method
         self.is_assigned=False
         self.is_done=False
         
@@ -64,7 +65,9 @@ class DistJobContext:
         print("TEST_PROGRESS",self.test_jobs_progress_dict)
         if job.uid in self.test_jobs_progress_dict:
             if self.test_jobs_progress_dict[job.uid]<10:
+                
                 self.test_jobs_progress_dict[job.uid]+=1
+                self.test_condition=False
             else:
                 job.is_done=True
                 job.is_assigned=False  

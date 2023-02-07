@@ -21,7 +21,7 @@ def run():
         
         
         try:
-            print("JOBS",djc.jobs)
+            print("JOBS",djc.port,djc.jobs)
             print(i)
             time.sleep(1)
             i+=1
@@ -40,6 +40,7 @@ def run():
                 print("CHECKING JOB",job.uid)
                 if job.function=="test":
                     djc.process_test_job(job)
+                    
                 
                 
                 matching_machine=[x for x in djc.machines if x.processing_job==job][0]
@@ -55,7 +56,7 @@ def run():
             
             
             
-            if i>50:
+            if i>100:
                 done=True
                 
         except (KeyboardInterrupt, SystemExit): #close thread on CTRL+C

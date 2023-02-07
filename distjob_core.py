@@ -38,6 +38,9 @@ class Thread(threading.Thread):
         function()
         
     
+    
+
+from distjob_context import djc
 class DistJobServer:
     
     def __init__(self,host="0.0.0.0",port=10100):
@@ -45,7 +48,6 @@ class DistJobServer:
         self.port=port
         
         
-        from distjob_context import djc
         djc.host=host
         djc.port=port
 
@@ -116,4 +118,4 @@ class DistJobServer:
             sys.exit()
 
 if __name__=="__main__":
-    dist_job_server=DistJobServer(port=10100)
+    dist_job_server=DistJobServer(port=djc.port)
