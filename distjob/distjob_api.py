@@ -63,9 +63,104 @@ class APIMachine(BaseModel):
     
     
     
+
+class APINode(BaseModel):
+    pos:Union[None,List[int]]=[0,0]
+    typ:Union[None,str]="Custom"
+    params:Union[None,Dict[str, Any]]
+    fields:Optional[List[Any]]=[]
+    is_active:bool=False
+    pipeline_uid:int=0
+    project_key:str=""
     
+    
+class APIEdge(BaseModel):
+    from_node_uid:int
+    to_node_uid:int
+    channel:Any
+    pipeline_uid:int=0
+    project_key:str=""
+    
+
+class APIVariable(BaseModel):
+    name:str=""
+    value:str=""
+    type:Optional[str]=""
+    size:Optional[int]=0
+    pipeline_uid:int=0
+    project_key:str=""
+    
+
+class DeleteObject(BaseModel):
+    project_key:str=""
+        
+class APIPipeline(BaseModel):
+    name:str="untitled"
+    start_node_uid:int=0
+    is_active:bool=False
+    #nodes_uids:List[int]
+    #edges_uids:List[int]
+    #variables_uids:List[int]
+    active_nodes_uids:List[int]=[]
+    remaining_nodes_uids:List[int]=[]
+    workspace_uid:int=0
+    project_key:str=""
+    
+    
+
+class APIPopup(BaseModel):
+    pos:List[int]=[0,0]
+    typ:str="Custom"
+    params:Dict[str, Any]
+    project_key:str=""
+
+
+class APIWorkspace(BaseModel):
+    workspace_name: str=""
+    project_key: str=""
  
 import datetime
+    
+class APITrigger(BaseModel):
+    trigger_name: str=""
+    machine_uid: int=""
+    pipeline_uid: int=""
+    first_run_datetime: datetime.datetime
+    frequency: int=""
+    workspace_uid: int=0
+    
+class APIDatabase(BaseModel):
+    database_name: str=""
+    server: str
+    port: int
+    database: str
+    username: str
+    password: str    
+    dialect: str
+    workspace_uid: int=0
+    
+    
+class APIDataset(BaseModel):
+    dataset_name: str=""
+    data: Any
+    workspace_uid: int=0
+    
+    
+class APIFile(BaseModel):
+    file_name: str=""
+    suffix: str=""
+    data: Any
+    workspace_uid: int=0
+    
+    
+class APIScript(BaseModel):
+    script_name: str=""
+    text: str=""
+    workspace_uid: int=0
+    
+
+
+
 
 @app.get("/api/v1/jobs")
 def get_jobs():
