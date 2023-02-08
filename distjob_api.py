@@ -40,19 +40,23 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
+import json
 
 class APIJob(BaseModel):
-    function:Any="test"
-    function_args:Any
+    url:Any="/api/v1/jobs"
+    data:Any='{"url": "test","data": {},"priority": 0,"start_datetime": "2023-01-01T12:00:00.000Z","check_condition_request_url": "/api/v1/test_condition","method": "POST"}'
     priority:int
     start_datetime:datetime.datetime
     check_condition_request_url:str="/api/v1/test_condition"
+    method:str="POST"
     
     
 class APIMachine(BaseModel):
     host:str="127.0.0.1"
-    port:int=10100
+    port:int=10100  
+    
+    
+    
     
     
     
@@ -81,11 +85,12 @@ def get_job(uid: Optional[int]=None):
         job=matching_jobs[0]
         return {
             "uid":job.uid,
-            "function":job.function,
-            "function_args":job.function_args,
+            "url":job.url,
+            "data":job.data,
             "priority":job.priority,
             "start_datetime":job.start_datetime,
-            "check_condition_request_url":job.check_condition_request_url
+            "check_condition_request_url":job.check_condition_request_url,
+            "method":job.method
             }
     else:
         return {"ok":False}
@@ -93,14 +98,15 @@ def get_job(uid: Optional[int]=None):
   
 @app.post("/api/v1/jobs")
 def new_job(job : APIJob):
-    job=djc.new_job(job.function,job.function_args,job.priority,job.start_datetime,job.check_condition_request_url)
+    job=djc.new_job(job.url,job.data,job.priority,job.start_datetime,job.check_condition_request_url)
     return {
         "uid":job.uid,
-        "function":job.function,
-        "function_args":job.function_args,
+        "url":job.url,
+        "data":job.data,
         "priority":job.priority,
         "start_datetime":job.start_datetime,
-        "check_condition_request_url":job.check_condition_request_url
+        "check_condition_request_url":job.check_condition_request_url,
+        "method":job.method
         }
 
 @app.delete("/api/v1/job/{uid}")
@@ -115,7 +121,7 @@ def delete_jobs():
 
 @app.put("/api/v1/job/{uid}")
 def update_job(uid: Optional[int]=None, job:APIJob=None):
-    djc.update_job_by_uid(uid, job.function,job.function_args,job.priority,job.start_datetime,job.check_condition_request_url)  
+    djc.update_job_by_uid(uid, job.url,job.data,job.priority,job.start_datetime,job.check_condition_request_url)  
     return {"ok":True}
 
 
@@ -175,7 +181,12 @@ def test_condition():
     """
     Returns sample test condition
     """
-    return {"condition": djc.test_condition}
+    print("TEST_CONDITION",djc.test_condition)
+    if djc.test_condition: #return True just once - turn off on get request
+        djc.test_condition=False
+        return {"condition": True}
+    else:
+        return {"condition": False}
 
 
 

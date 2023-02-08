@@ -55,7 +55,8 @@ class DistJobContext:
         #self.create_test_job()
         
     def create_test_job(self):
-        self.jobs.append(Job("test",None,0,datetime.datetime.now(),"/api/v1/test_condition"))
+        data={"url": "test","data": {},"priority": 0,"start_datetime": "2023-01-01T12:00:00.000Z","check_condition_request_url": "/api/v1/test_condition","method": "POST"}
+        self.jobs.append(Job("/api/v1/jobs",data,0,datetime.datetime.now(),"/api/v1/test_condition"))
         
     
     
@@ -72,6 +73,7 @@ class DistJobContext:
                 job.is_done=True
                 job.is_assigned=False  
                 self.test_condition=True #len([x for x in self.jobs if x.is_done])==len(self.jobs) #True if all jobs done
+                print("TEST CONDITION SET",self.test_condition)
         else:
             self.test_jobs_progress_dict[job.uid]=0
                      
@@ -85,10 +87,47 @@ class DistJobContext:
         
         for i,machine in enumerate(self.machines):
             if machine.processing_job is None:
-                self.machines[i].processing_job=job
-                job.is_assigned=True
-                print("Machine",i,"was assigned")
-                return(self.machines[i])
+                if job.url=="test":
+                    self.machines[i].processing_job=job
+                    job.is_assigned=True
+                    print("Machine",i,"was assigned")
+                    return(self.machines[i])
+                
+                response=None
+                url="http://"+machine.host+":"+str(machine.port)+job.url
+                #job.data should be in dict format (json)
+                print("URL",job.url)
+                print("DATA",job.data,type(job.data))
+                try:
+                    if job.method=="POST":
+                        response=requests.post(url,json.dumps(job.data))
+                        result=json.loads(response.content)
+                    elif job.method=="GET":
+                        response=requests.post(job.url,json.dumps(job.data))
+                        result=json.loads(response.content)
+                    elif job.method=="DELETE":
+                        response=requests.delete(job.url,json.dumps(job.data))
+                        result=json.loads(response.content)
+                    elif job.method=="PUT":
+                        response=requests.put(job.url,json.dumps(job.data))
+                        result=json.loads(response.content)
+                
+                
+                    print("JOB ASSIGNMENT RESPONSE:",response)
+                    if response is not None:
+                        if response.status_code==200:
+                            
+                            self.machines[i].processing_job=job
+                            job.is_assigned=True
+                            print("Machine",i,"was assigned")
+                            return(self.machines[i])
+                        else:
+                            print("Machine couldnt be assigned, wrong status code",response.status_code)
+                            return(None)
+                    
+                except requests.exceptions.ConnectionError:
+                    print("Connection error")
+                
         print("No machine could be assigned")
         return(None)
     
@@ -106,19 +145,32 @@ class DistJobContext:
     
     
     def check_if_job_done(self, machine, job):
-        url="http://"+machine.host+":"+str(machine.port)+job.check_condition_request_url
-        print(url)
-        response=requests.get(url=url)
-        result=json.loads(response.content)
-        print(result)
-        is_job_done=result["condition"]
-        print(job,"IS_JOB_DONE",is_job_done)
         
-        if is_job_done:
-            index=self.machines.index(machine)
-            self.machines[index].processing_job=None
-            job.is_assigned=False
-        return(result["condition"])
+        is_running_locally_on_this_port=False
+        if self.host.strip() in ["0.0.0.0","127.0.0.1"] and machine.host.strip() in ["0.0.0.0","127.0.0.1"]:
+            is_running_locally_on_this_port=True
+        if machine.host==self.host:
+            is_running_locally_on_this_port=True
+        
+        
+        if is_running_locally_on_this_port and machine.port==self.port: #if executed on this machine (e.g. test task), dont check test condition
+            return(False)
+        else:   
+            url="http://"+machine.host+":"+str(machine.port)+job.check_condition_request_url
+            print(url)
+            response=requests.get(url=url)
+            result=json.loads(response.content)
+            print(result)
+            is_job_done=result["condition"]
+            print(job,"IS_JOB_DONE",is_job_done)
+            
+            if is_job_done:
+                index=self.machines.index(machine)
+                self.machines[index].processing_job=None
+                job.is_assigned=False
+                job.is_done=True
+            
+            return(result["condition"])
         
         
         
@@ -140,8 +192,8 @@ class DistJobContext:
 
 
 
-    def new_job(self, function, function_args, priority, start_datetime, check_condition_request_url):
-        job=Job(function, function_args, priority, start_datetime, check_condition_request_url)
+    def new_job(self, url, data, priority, start_datetime, check_condition_request_url):
+        job=Job(url, data, priority, start_datetime, check_condition_request_url)
         
         self.jobs.append(job)
         return(job)
@@ -154,12 +206,12 @@ class DistJobContext:
      
         
 
-    def update_job(self,job,function=None, function_args=None, priority=None, start_datetime=None, check_condition_request_url=None):
+    def update_job(self,job,url=None, data=None, priority=None, start_datetime=None, check_condition_request_url=None):
         index=self.jobs.index(job)
-        if function is not None:
-            self.jobs[index].function=function
-        if function_args is not None:
-            self.jobs[index].function_args=function_args
+        if url is not None:
+            self.jobs[index].url=url
+        if data is not None:
+            self.jobs[index].data=data
         if priority is not None:
             self.jobs[index].priority=priority
         if start_datetime is not None:
@@ -169,10 +221,10 @@ class DistJobContext:
             
        
         
-    def update_job_by_uid(self,job_uid, function=None, function_args=None, priority=None, start_datetime=None, check_condition_request_url=None):
+    def update_job_by_uid(self,job_uid, url=None, data=None, priority=None, start_datetime=None, check_condition_request_url=None):
         job=self.get_job_by_uid(job_uid)
         try:
-            self.update_job(job,function, function_args, priority, start_datetime, check_condition_request_url)
+            self.update_job(job,url, data, priority, start_datetime, check_condition_request_url)
         except Exception as e:
             print(f"Job couldn't be updated: {e}")
         

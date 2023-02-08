@@ -23,8 +23,7 @@ def run():
         try:
             print("JOBS",djc.port,djc.jobs)
             print(i)
-            time.sleep(1)
-            i+=1
+            
             
             ready_jobs=[x for x in djc.jobs if x.start_datetime.timestamp()<=datetime.datetime.now().timestamp() and not x.is_assigned and not x.is_done]
             if len(ready_jobs)>0:
@@ -35,10 +34,10 @@ def run():
             
             
             
-            assigned_jobs=[x for x in djc.jobs if x.is_assigned]
+            assigned_jobs=[x for x in djc.jobs if x.is_assigned and not x.is_done]
             for i,job in enumerate(assigned_jobs):
                 print("CHECKING JOB",job.uid)
-                if job.function=="test":
+                if job.url=="test":
                     djc.process_test_job(job)
                     
                 
@@ -54,11 +53,13 @@ def run():
             
             
             
+            time.sleep(0.5)
+            i+=1
             
-            
-            if i>100:
-                done=True
+            #if i>100:
+                #done=True
                 
         except (KeyboardInterrupt, SystemExit): #close thread on CTRL+C
             djc.ARE_ALL_THREADS_FINISHED=True
+            
             sys.exit()
